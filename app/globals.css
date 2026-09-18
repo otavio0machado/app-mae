@@ -821,14 +821,15 @@ tbody tr:hover {
   line-height: 1.7;
 }
 .signatures {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7mm;
+  width: 100%;
+  max-width: 90mm;
+  margin: 0 auto;
   padding-top: 25mm;
   break-inside: avoid;
   text-align: center;
   font-size: 9px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .signatures span {
   display: block;
@@ -1199,8 +1200,7 @@ tbody tr:hover {
     width: 85%;
   }
   .signatures {
-    gap: 4mm;
-    font-size: 7px;
+    font-size: 9px;
     padding-top: 20mm;
   }
   .app-footer {
@@ -1329,3 +1329,12 @@ tbody tr:hover {
     animation: none;
   }
 }
+
+.install-trigger { position: fixed; bottom: 18px; right: 18px; z-index: 20; box-shadow: 0 3px 12px #24324725; }
+.install-dialog { margin: auto; width: min(440px, calc(100% - 32px)); max-height: 85dvh; overflow: auto; padding: 26px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); background: white; }
+.install-dialog::backdrop { background: #14233d80; }
+.install-dialog h3 { margin-top: 20px; }
+.install-dialog p { margin: 12px 0; font-size: 13px; line-height: 1.7; }
+.install-dialog form { margin-top: 20px; text-align: right; }
+@media screen { body { padding-bottom: 72px; } }
+@media (display-mode: standalone) { body { padding-bottom: 0; } .install-app { display: none; } }

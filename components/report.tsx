@@ -108,16 +108,11 @@ export default function Report({
         )}
       </section>
       <footer className="signatures">
-        {[
-          "Assinatura e carimbo do profissional",
-          "Assinatura e carimbo do responsável da empresa",
-          "Assinatura e carimbo do responsável pelo setor/diretor/coordenador",
-        ].map((label) => (
-          <div key={label}>
-            <span />
-            {label}
-          </div>
-        ))}
+        <div>
+          <span />
+          <strong>{professional.name}</strong>
+          <p>Assinatura e carimbo do profissional</p>
+        </div>
       </footer>
     </article>
   );
