@@ -11,7 +11,6 @@ import { createClient } from "@/lib/supabase/client";
 import {
   date,
   errorMessage,
-  monthLabel,
   monthRange,
   money,
   number,
@@ -55,7 +54,6 @@ export default function Dashboard({
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [editingProfessional, setEditingProfessional] =
     useState<Professional | null>(null);
-  const [chosenProfessional, setChosenProfessional] = useState("");
   const [ascending, setAscending] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
   const lock = useRef(false);
@@ -86,12 +84,13 @@ export default function Dashboard({
           .from("entries")
           .select("*")
           .eq("user_id", userId)
-          .gte("work_date", start)
-          .lt("work_date", end)
           .order("work_date")
           .order("id")
           .range(offset, offset + 999);
-        if (filter) query = query.eq("professional_id", filter);
+        if (tab === "report") {
+          query = query.gte("work_date", start).lt("work_date", end);
+          if (filter) query = query.eq("professional_id", filter);
+        }
         const { data, error } = await query;
         if (error) throw error;
         allEntries.push(...(data as Entry[]));
@@ -109,7 +108,7 @@ export default function Dashboard({
     } finally {
       if (current === sequence.current) setLoading(false);
     }
-  }, [supabase, userId, month, filter]);
+  }, [supabase, userId, month, filter, tab]);
   useEffect(() => {
     // Synchronize the remote query when its filters change; sequence is a request counter, not a DOM ref.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -138,7 +137,6 @@ export default function Dashboard({
   function clearForms() {
     setEditingEntry(null);
     setEditingProfessional(null);
-    setChosenProfessional("");
     setFormVersion((v) => v + 1);
   }
   function navigate(next: Tab) {
@@ -152,11 +150,11 @@ export default function Dashboard({
     const hours = Number(String(data.get("hours")).replace(",", "."));
     const payload = {
       user_id: userId,
-      professional_id: String(data.get("professional_id")),
+      professional_id: editingEntry?.professional_id ?? professionals[0]?.id ?? "",
       work_date: String(data.get("work_date")),
       description: String(data.get("description")).trim(),
       hours,
-      notes: String(data.get("notes")).trim() || null,
+      notes: editingEntry?.notes ?? null,
     };
     if (
       !payload.description ||
@@ -184,7 +182,7 @@ export default function Dashboard({
         if (error) throw error;
         clearForms();
       },
-      `Lançamento ${editingEntry ? "atualizado" : "salvo"}. Use os filtros para consultar o período registrado.`,
+      `Lançamento ${editingEntry ? "atualizado" : "salvo"}.`,
     );
   }
   async function saveProfessional(event: FormEvent<HTMLFormElement>) {
@@ -248,10 +246,6 @@ export default function Dashboard({
     }, "Registro excluído com sucesso.");
   }
   const total = entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
-  const days = new Set(entries.map((e) => e.work_date)).size;
-  const activeProfessional = professionals.find(
-    (p) => p.id === chosenProfessional,
-  );
   const reportProfessional = professionals.find((p) => p.id === filter);
   const sorted = [...entries].sort((a, b) =>
     ascending
@@ -357,7 +351,7 @@ export default function Dashboard({
               <button onClick={() => void load()}>Tentar novamente</button>
             </div>
           )}
-          {tab !== "professionals" && (
+          {tab === "report" && (
             <section className="filter-bar no-print">
               <div className="filter-caption">
                 <Icon name="list" size={18} />
@@ -382,55 +376,13 @@ export default function Dashboard({
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 >
-                  {professionalSelect(tab !== "report")}
+                  {professionalSelect(false)}
                 </select>
               </label>
             </section>
           )}
           {tab === "entries" && (
             <>
-              <section className="stats no-print">
-                <div className="stat">
-                  <span className="stat-icon">
-                    <Icon name="clock" />
-                  </span>
-                  <span>
-                    Horas no período
-                    <strong>
-                      {loading ? "—" : number(total)} <small>h</small>
-                    </strong>
-                    <small className="stat-detail">{monthLabel(month)}</small>
-                  </span>
-                </div>
-                <div className="stat">
-                  <span className="stat-icon">
-                    <Icon name="list" />
-                  </span>
-                  <span>
-                    Lançamentos
-                    <strong>
-                      {loading
-                        ? "—"
-                        : entries.length.toString().padStart(2, "0")}
-                    </strong>
-                    <small className="stat-detail">
-                      atividades registradas
-                    </small>
-                  </span>
-                </div>
-                <div className="stat">
-                  <span className="stat-icon">
-                    <Icon name="people" />
-                  </span>
-                  <span>
-                    Dias trabalhados
-                    <strong>
-                      {loading ? "—" : days.toString().padStart(2, "0")}
-                    </strong>
-                    <small className="stat-detail">com horas registradas</small>
-                  </span>
-                </div>
-              </section>
               <section className="card no-print">
                 <div className="card-heading">
                   <div>
@@ -460,31 +412,6 @@ export default function Dashboard({
                           max="9998-12-31"
                         />
                       </label>
-                      <label className="span-2">
-                        Profissional *
-                        <select
-                          name="professional_id"
-                          required
-                          value={chosenProfessional}
-                          onChange={(e) =>
-                            setChosenProfessional(e.target.value)
-                          }
-                        >
-                          {professionalSelect(false)}
-                        </select>
-                      </label>
-                      {activeProfessional && (
-                        <div className="professional-info full">
-                          <span>
-                            <b>CNPJ:</b>{" "}
-                            {activeProfessional.cnpj || "Não informado"}
-                          </span>
-                          <span>
-                            <b>Atividade/Contrato:</b>{" "}
-                            {activeProfessional.contract || "Não informado"}
-                          </span>
-                        </div>
-                      )}
                       <ActivityDescription initialValue={editingEntry?.description ?? ""} />
                       <label>
                         Horas *
@@ -497,16 +424,6 @@ export default function Dashboard({
                           required
                           defaultValue={editingEntry?.hours ?? ""}
                           placeholder="Ex.: 8,5"
-                        />
-                      </label>
-                      <label className="full">
-                        Observações <span className="optional">(opcional)</span>
-                        <textarea
-                          name="notes"
-                          rows={2}
-                          maxLength={5000}
-                          defaultValue={editingEntry?.notes ?? ""}
-                          placeholder="Algum detalhe adicional para o relatório?"
                         />
                       </label>
                     </div>
@@ -552,17 +469,16 @@ export default function Dashboard({
               <section className="card no-print">
                 <div className="card-heading">
                   <div className="inline-heading">
-                    <h2>Lançamentos do período</h2>
+                    <h2>Lançamentos registrados</h2>
                     <span className="count-badge">{entries.length}</span>
                   </div>
-                  <span className="subtle capitalize">{monthLabel(month)}</span>
                 </div>
                 {loading ? (
                   <Loading />
                 ) : !entries.length ? (
                   <Empty
                     title="Seu mês começa aqui"
-                    text="Os lançamentos deste período aparecerão aqui. Registre uma atividade ou ajuste os filtros."
+                    text="Suas atividades aparecerão aqui após salvar."
                   />
                 ) : (
                   <>
@@ -609,9 +525,6 @@ export default function Dashboard({
                                     disabled={busy}
                                     onClick={() => {
                                       setEditingEntry(entry);
-                                      setChosenProfessional(
-                                        entry.professional_id,
-                                      );
                                       setFormVersion((v) => v + 1);
                                       formRef.current?.scrollIntoView({
                                         behavior: "smooth",
@@ -638,7 +551,7 @@ export default function Dashboard({
                       </table>
                     </div>
                     <div className="table-footer">
-                      <span>Total de horas no período</span>
+                      <span>Total de horas</span>
                       <strong>{number(total)} h</strong>
                     </div>
                   </>
