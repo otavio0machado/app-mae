@@ -200,6 +200,27 @@ export default function Dashboard({
       clearForms();
     }, "Lançamento excluído.");
   }
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!professional) return;
+    const data = new FormData(event.currentTarget);
+    const rate = String(data.get("hourly_rate") ?? "").trim();
+    const payload = {
+      name: String(data.get("name") ?? "").trim(),
+      cnpj: String(data.get("cnpj") ?? "").trim() || null,
+      contract: String(data.get("contract") ?? "").trim() || null,
+      hourly_rate: rate ? Number(rate.replace(",", ".")) : null,
+    };
+    if (!payload.name || (payload.hourly_rate !== null && (!Number.isFinite(payload.hourly_rate) || payload.hourly_rate < 0))) {
+      setNotice({ text: "Informe seu nome e um valor/hora válido.", error: true });
+      return;
+    }
+    await mutate(async () => {
+      const { data: updated, error } = await supabase.from("professionals").update(payload).eq("id", professional.id).eq("user_id", userId).select("*").single();
+      if (error) throw error;
+      setProfessional(updated as Professional);
+    }, "Dados atualizados. Eles aparecerão no relatório.");
+  }
   const total = entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
   const sorted = [...entries].sort((a, b) =>
     ascending
@@ -311,8 +332,17 @@ export default function Dashboard({
               </label>
             </section>
           )}
-          {tab === "entries" && (
+          {tab === "entries" && professional && (
             <>
+              <section className="card no-print profile-card">
+                <div className="card-heading"><div><h2>Meus dados para o relatório</h2><p>Preencha uma vez e use em todos os seus relatórios.</p></div></div>
+                <form onSubmit={saveProfile}><fieldset disabled={busy || loading}><div className="form-grid">
+                  <label>Nome *<input name="name" required defaultValue={professional.name} /></label>
+                  <label>CNPJ<input name="cnpj" defaultValue={professional.cnpj ?? ""} placeholder="Opcional" /></label>
+                  <label>Valor/hora (R$)<input name="hourly_rate" type="number" min="0" step="0.01" defaultValue={professional.hourly_rate ?? ""} placeholder="Opcional" /></label>
+                  <label>Atividade/Contrato<input name="contract" defaultValue={professional.contract ?? ""} placeholder="Opcional" /></label>
+                </div><div className="form-footer"><span>Esses dados aparecem no relatório.</span><button className="primary" disabled={busy}>Salvar meus dados</button></div></fieldset></form>
+              </section>
               <section className="card no-print">
                 <div className="card-heading">
                   <div>
