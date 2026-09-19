@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -22,6 +21,7 @@ import {
 } from "@/lib/utils";
 import Icon from "./icon";
 import Report from "./report";
+import ActivityDescription from "./activity-description";
 
 type Tab = "entries" | "report" | "professionals";
 const titles = {
@@ -37,12 +37,9 @@ const titles = {
 };
 export default function Dashboard({
   userId,
-  email,
 }: {
   userId: string;
-  email: string;
 }) {
-  const router = useRouter();
   const [supabase] = useState(createClient);
   const [tab, setTab] = useState<Tab>("entries");
   const [month, setMonth] = useState(() => today().slice(0, 7));
@@ -122,17 +119,6 @@ export default function Dashboard({
     };
     return invalidate;
   }, [load]);
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        router.replace("/login");
-        router.refresh();
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [supabase, router]);
   async function mutate(operation: () => Promise<void>, success: string) {
     if (lock.current) return;
     lock.current = true;
@@ -261,21 +247,6 @@ export default function Dashboard({
       if (table === "professionals" && filter === id) setFilter("");
     }, "Registro excluído com sucesso.");
   }
-  async function logout() {
-    if (lock.current) return;
-    lock.current = true;
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      router.replace("/login");
-      router.refresh();
-    } catch (e) {
-      setNotice({ text: errorMessage(e), error: true });
-      lock.current = false;
-      setBusy(false);
-    }
-  }
   const total = entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
   const days = new Set(entries.map((e) => e.work_date)).size;
   const activeProfessional = professionals.find(
@@ -339,23 +310,6 @@ export default function Dashboard({
             Ver relatório <Icon name="arrow" size={15} />
           </button>
         </div>
-        <div className="account">
-          <span className="avatar">
-            {email.slice(0, 1).toUpperCase() || "U"}
-          </span>
-          <div>
-            <strong>Minha conta</strong>
-            <small title={email}>{email}</small>
-          </div>
-          <button
-            aria-label="Sair"
-            title="Sair"
-            disabled={busy}
-            onClick={logout}
-          >
-            <Icon name="logout" size={18} />
-          </button>
-        </div>
       </aside>
       <main className="workspace">
         <header className="topbar no-print">
@@ -371,7 +325,7 @@ export default function Dashboard({
         <div className="content">
           <section className="page-heading no-print">
             <div>
-              <span className="eyebrow">ORGANIZAÇÃO QUE DÁ TEMPO</span>
+              <span className="eyebrow">SUAS HORAS, SEM COMPLICAÇÃO</span>
               <h1>{titles[tab][0]}</h1>
               <p>{titles[tab][1]}</p>
             </div>
@@ -519,19 +473,6 @@ export default function Dashboard({
                           {professionalSelect(false)}
                         </select>
                       </label>
-                      <label>
-                        Horas *
-                        <input
-                          name="hours"
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          max="999999.99"
-                          required
-                          defaultValue={editingEntry?.hours ?? ""}
-                          placeholder="Ex.: 8,5"
-                        />
-                      </label>
                       {activeProfessional && (
                         <div className="professional-info full">
                           <span>
@@ -544,15 +485,18 @@ export default function Dashboard({
                           </span>
                         </div>
                       )}
-                      <label className="full">
-                        Descrição das atividades *
-                        <textarea
-                          name="description"
+                      <ActivityDescription initialValue={editingEntry?.description ?? ""} />
+                      <label>
+                        Horas *
+                        <input
+                          name="hours"
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="999999.99"
                           required
-                          rows={2}
-                          maxLength={5000}
-                          defaultValue={editingEntry?.description ?? ""}
-                          placeholder="Descreva as atividades que você realizou…"
+                          defaultValue={editingEntry?.hours ?? ""}
+                          placeholder="Ex.: 8,5"
                         />
                       </label>
                       <label className="full">

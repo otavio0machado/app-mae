@@ -1338,3 +1338,58 @@ tbody tr:hover {
 .install-dialog form { margin-top: 20px; text-align: right; }
 @media screen { body { padding-bottom: 72px; } }
 @media (display-mode: standalone) { body { padding-bottom: 0; } .install-app { display: none; } }
+
+/* Larger controls and clear color cues, without changing the printed report. */
+@media screen {
+  body { font-size: 18px; }
+  .workspace .no-print h1 { font-size: 34px; }
+  .workspace .no-print h2, .empty h3 { font-size: 23px; }
+  .workspace .no-print label, .workspace .no-print input,
+  .workspace .no-print select, .workspace .no-print textarea,
+  .workspace .no-print button, .sidebar nav button { font-size: 18px; }
+  .workspace .no-print input, .workspace .no-print select { min-height: 54px; }
+  .workspace .no-print textarea { font-size: 21px; line-height: 1.7; font-weight: 400; }
+  .workspace .no-print p, .form-footer > span, .subtle, .empty p,
+  .workspace .no-print th, .workspace .no-print td, .table-footer,
+  .notice, .professional-info { font-size: 16px; color: #46546a; }
+  .primary, .secondary, .row-actions button { min-height: 48px; padding: 12px 18px; }
+  .form-footer .primary { background: #167044; border-color: #167044; }
+  .form-footer .primary:hover { background: #105b36; }
+  .sidebar nav button:nth-child(1) { color: #174b9c; background: #e7f0ff; }
+  .sidebar nav button:nth-child(2) { color: #6635a3; background: #f2e9ff; }
+  .sidebar nav button:nth-child(3) { color: #865100; background: #fff1ce; }
+  .sidebar nav button.active { outline: 3px solid currentColor; outline-offset: -3px; font-weight: 700; }
+  .stat:nth-child(1) { background: #e7f0ff; border-color: #adc6eb; }
+  .stat:nth-child(2) { background: #e8f7ed; border-color: #a6d9b8; }
+  .stat:nth-child(3) { background: #fff3d8; border-color: #e3ca93; }
+  .stat > span:last-child, .stat-detail { font-size: 16px; color: #425069; }
+  .card-heading { background: #edf4ff; }
+  .row-actions button { border: 1px solid #aac4ea; background: #eef4ff; color: #174b9c; }
+  .row-actions .danger-link { color: #a02525; background: #ffeded; border-color: #efb3b3; }
+  .workspace .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace .form-grid > .span-2 { grid-column: span 1; }
+  .page-heading .secondary { font-size: 16px; }
+  .filter-caption, .eyebrow, .sidebar-note, .nav-label, .app-footer { display: none; }
+  .activity-field > button { margin-top: 10px; color: #63359b; background: #f2e9ff; border-color: #c5a9e6; }
+  .activity-dialog { margin: auto; width: min(800px, calc(100% - 24px)); max-height: 90dvh; overflow: auto; padding: 24px; border: 2px solid #b5a0d5; border-radius: 16px; background: white; color: #243247; }
+  .activity-dialog::backdrop { background: #15203999; }
+  .activity-dialog h2 { margin-bottom: 20px; }
+  .activity-dialog label { margin-bottom: 10px; }
+  .activity-dialog textarea { min-height: 230px; max-height: 50dvh; }
+  .activity-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+}
+@media screen and (max-width: 760px) {
+  .sidebar nav button { font-size: 16px; flex-direction: column; min-height: 72px; }
+  .workspace .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: 1fr; }
+  .stat { display: flex; }
+  .stat-icon { display: grid; }
+  .stat strong { display: inline; margin-left: 12px; }
+  .stat-detail { display: block; }
+  .filter-bar { flex-direction: column; }
+  .form-footer { flex-direction: column; align-items: stretch; }
+  .form-footer > div { margin: 0; flex-wrap: wrap; }
+  .form-footer .primary { flex: 1; }
+  .page-heading { flex-wrap: wrap; }
+  .activity-dialog { padding: 18px; }
+}

@@ -23,13 +23,7 @@ export async function proxy(request: NextRequest) {
       },
     },
   );
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims && request.nextUrl.pathname === "/") {
-    const redirect = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
-    redirect.headers.set("Cache-Control", "private, no-store");
-    return redirect;
-  }
+  await supabase.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
