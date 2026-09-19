@@ -21,7 +21,7 @@ import Icon from "./icon";
 import Report from "./report";
 import ActivityDescription from "./activity-description";
 
-type Tab = "entries" | "report";
+type Tab = "entries" | "report" | "profile";
 const titles = {
   entries: [
     "Lançamentos",
@@ -31,6 +31,7 @@ const titles = {
     "Relatório mensal",
     "Seu trabalho organizado, pronto para imprimir e assinar.",
   ],
+  profile: ["Meus dados", "Informações usadas automaticamente nos seus relatórios."],
 };
 export default function Dashboard({
   userId,
@@ -242,6 +243,7 @@ export default function Dashboard({
             [
               { id: "entries", text: "Lançamentos", icon: "list" },
               { id: "report", text: "Relatório", icon: "report" },
+              { id: "profile", text: "Meus dados", icon: "people" },
             ] as const
           ).map((item) => (
             <button
@@ -332,9 +334,7 @@ export default function Dashboard({
               </label>
             </section>
           )}
-          {tab === "entries" && professional && (
-            <>
-              <section className="card no-print profile-card">
+          {tab === "profile" && professional && <section className="card no-print profile-card">
                 <div className="card-heading"><div><h2>Meus dados para o relatório</h2><p>Preencha uma vez e use em todos os seus relatórios.</p></div></div>
                 <form onSubmit={saveProfile}><fieldset disabled={busy || loading}><div className="form-grid">
                   <label>Nome *<input name="name" required defaultValue={professional.name} /></label>
@@ -342,7 +342,9 @@ export default function Dashboard({
                   <label>Valor/hora (R$)<input name="hourly_rate" type="number" min="0" step="0.01" defaultValue={professional.hourly_rate ?? ""} placeholder="Opcional" /></label>
                   <label>Atividade/Contrato<input name="contract" defaultValue={professional.contract ?? ""} placeholder="Opcional" /></label>
                 </div><div className="form-footer"><span>Esses dados aparecem no relatório.</span><button className="primary" disabled={busy}>Salvar meus dados</button></div></fieldset></form>
-              </section>
+              </section>}
+          {tab === "entries" && professional && (
+            <>
               <section className="card no-print">
                 <div className="card-heading">
                   <div>
