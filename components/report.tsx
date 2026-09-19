@@ -1,7 +1,6 @@
 import {
   date,
   monthLabel,
-  money,
   number,
   type Entry,
   type Professional,
@@ -81,18 +80,6 @@ export default function Report({
           <span>Total de horas</span>
           <strong>{number(total)} h</strong>
         </div>
-        {professional.hourly_rate !== null && (
-          <>
-            <div>
-              <span>Valor/hora</span>
-              <strong>{money(Number(professional.hourly_rate))}</strong>
-            </div>
-            <div className="grand-total">
-              <span>Valor total</span>
-              <strong>{money(total * Number(professional.hourly_rate))}</strong>
-            </div>
-          </>
-        )}
       </section>
       <section className="report-notes">
         <h2>Observações</h2>

@@ -11,7 +11,6 @@ create table public.professionals (
   name text not null check (length(btrim(name)) > 0),
   cnpj text,
   contract text,
-  hourly_rate numeric(12,2) check (hourly_rate >= 0 and hourly_rate <> 'NaN'::numeric),
   created_at timestamptz not null default now(),
   unique (id, user_id)
 );

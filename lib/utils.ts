@@ -4,7 +4,6 @@ export type Professional = {
   name: string;
   cnpj: string | null;
   contract: string | null;
-  hourly_rate: number | null;
 };
 export type Entry = {
   id: string;
@@ -17,10 +16,6 @@ export type Entry = {
 };
 export const number = (value: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value);
-export const money = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    value,
-  );
 export const date = (value: string) => value.split("-").reverse().join("/");
 export const today = () => {
   const now = new Date();
