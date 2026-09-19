@@ -12,7 +12,6 @@ import {
   date,
   errorMessage,
   monthRange,
-  money,
   number,
   today,
   type Entry,
@@ -22,7 +21,7 @@ import Icon from "./icon";
 import Report from "./report";
 import ActivityDescription from "./activity-description";
 
-type Tab = "entries" | "report" | "professionals";
+type Tab = "entries" | "report";
 const titles = {
   entries: [
     "Lançamentos",
@@ -32,7 +31,6 @@ const titles = {
     "Relatório mensal",
     "Seu trabalho organizado, pronto para imprimir e assinar.",
   ],
-  professionals: ["Profissionais", "As informações certas em cada relatório."],
 };
 export default function Dashboard({
   userId,
@@ -42,8 +40,7 @@ export default function Dashboard({
   const [supabase] = useState(createClient);
   const [tab, setTab] = useState<Tab>("entries");
   const [month, setMonth] = useState(() => today().slice(0, 7));
-  const [filter, setFilter] = useState("");
-  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [professional, setProfessional] = useState<Professional | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -52,8 +49,6 @@ export default function Dashboard({
   );
   const [busy, setBusy] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
-  const [editingProfessional, setEditingProfessional] =
-    useState<Professional | null>(null);
   const [ascending, setAscending] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
   const lock = useRef(false);
@@ -78,18 +73,31 @@ export default function Dashboard({
         allProfessionals.push(...(data as Professional[]));
         if (data.length < 1000) break;
       }
+      let flavia = allProfessionals.find(p =>
+        /^flavia(?:\s|$)/i.test(p.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()),
+      );
+      if (!flavia) {
+        const { error } = await supabase.from("professionals").upsert(
+          { id: userId, user_id: userId, name: "FLAVIA PELUFFO DA SILVA" },
+          { onConflict: "id", ignoreDuplicates: true },
+        );
+        if (error) throw error;
+        const result = await supabase.from("professionals").select("*").eq("id", userId).eq("user_id", userId).single();
+        if (result.error) throw result.error;
+        flavia = result.data as Professional;
+      }
       const allEntries: Entry[] = [];
       for (let offset = 0; ; offset += 1000) {
         let query = supabase
           .from("entries")
           .select("*")
+          .eq("professional_id", flavia.id)
           .eq("user_id", userId)
           .order("work_date")
           .order("id")
           .range(offset, offset + 999);
         if (tab === "report") {
           query = query.gte("work_date", start).lt("work_date", end);
-          if (filter) query = query.eq("professional_id", filter);
         }
         const { data, error } = await query;
         if (error) throw error;
@@ -97,7 +105,7 @@ export default function Dashboard({
         if (data.length < 1000) break;
       }
       if (current === sequence.current) {
-        setProfessionals(allProfessionals);
+        setProfessional(flavia);
         setEntries(allEntries);
       }
     } catch (e) {
@@ -108,7 +116,7 @@ export default function Dashboard({
     } finally {
       if (current === sequence.current) setLoading(false);
     }
-  }, [supabase, userId, month, filter, tab]);
+  }, [supabase, userId, month, tab]);
   useEffect(() => {
     // Synchronize the remote query when its filters change; sequence is a request counter, not a DOM ref.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -136,7 +144,6 @@ export default function Dashboard({
   }
   function clearForms() {
     setEditingEntry(null);
-    setEditingProfessional(null);
     setFormVersion((v) => v + 1);
   }
   function navigate(next: Tab) {
@@ -150,7 +157,7 @@ export default function Dashboard({
     const hours = Number(String(data.get("hours")).replace(",", "."));
     const payload = {
       user_id: userId,
-      professional_id: editingEntry?.professional_id ?? professionals[0]?.id ?? "",
+      professional_id: editingEntry?.professional_id ?? professional?.id ?? "",
       work_date: String(data.get("work_date")),
       description: String(data.get("description")).trim(),
       hours,
@@ -164,7 +171,7 @@ export default function Dashboard({
       hours <= 0
     ) {
       setNotice({
-        text: "Preencha data, profissional, descrição e horas maiores que zero.",
+        text: "Preencha a data, descreva a atividade e informe horas maiores que zero.",
         error: true,
       });
       return;
@@ -185,86 +192,19 @@ export default function Dashboard({
       `Lançamento ${editingEntry ? "atualizado" : "salvo"}.`,
     );
   }
-  async function saveProfessional(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const raw = String(data.get("hourly_rate")).trim();
-    const payload = {
-      user_id: userId,
-      name: String(data.get("name")).trim(),
-      cnpj: String(data.get("cnpj")).trim() || null,
-      contract: String(data.get("contract")).trim() || null,
-      hourly_rate: raw ? Number(raw.replace(",", ".")) : null,
-    };
-    if (
-      !payload.name ||
-      (payload.hourly_rate !== null &&
-        (!Number.isFinite(payload.hourly_rate) || payload.hourly_rate < 0))
-    ) {
-      setNotice({
-        text: "Informe o nome e um valor/hora válido, igual ou maior que zero.",
-        error: true,
-      });
-      return;
-    }
-    await mutate(
-      async () => {
-        const query = editingProfessional
-          ? supabase
-              .from("professionals")
-              .update(payload)
-              .eq("id", editingProfessional.id)
-              .eq("user_id", userId)
-          : supabase.from("professionals").insert(payload);
-        const { error } = await query.select("id").single();
-        if (error) throw error;
-        clearForms();
-      },
-      `Profissional ${editingProfessional ? "atualizado" : "cadastrado"} com sucesso.`,
-    );
-  }
-  async function remove(table: "entries" | "professionals", id: string) {
-    if (
-      !confirm(
-        table === "entries"
-          ? "Excluir este lançamento? Esta ação não pode ser desfeita."
-          : "Excluir este profissional e TODOS os seus lançamentos, de todos os meses? Esta ação não pode ser desfeita.",
-      )
-    )
-      return;
+  async function remove(id: string) {
+    if (!confirm("Excluir este lançamento? Esta ação não pode ser desfeita.")) return;
     await mutate(async () => {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq("id", id)
-        .eq("user_id", userId)
-        .select("id")
-        .single();
+      const { error } = await supabase.from("entries").delete().eq("id", id).eq("user_id", userId).select("id").single();
       if (error) throw error;
       clearForms();
-      if (table === "professionals" && filter === id) setFilter("");
-    }, "Registro excluído com sucesso.");
+    }, "Lançamento excluído.");
   }
   const total = entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
-  const reportProfessional = professionals.find((p) => p.id === filter);
   const sorted = [...entries].sort((a, b) =>
     ascending
       ? a.work_date.localeCompare(b.work_date)
       : b.work_date.localeCompare(a.work_date),
-  );
-  const professionalSelect = (all: boolean) => (
-    <>
-      {
-        <option value="">
-          {all ? "Todos os profissionais" : "Selecione um profissional"}
-        </option>
-      }
-      {professionals.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </>
   );
   return (
     <div className="app-shell">
@@ -281,7 +221,6 @@ export default function Dashboard({
             [
               { id: "entries", text: "Lançamentos", icon: "list" },
               { id: "report", text: "Relatório", icon: "report" },
-              { id: "professionals", text: "Profissionais", icon: "people" },
             ] as const
           ).map((item) => (
             <button
@@ -308,7 +247,7 @@ export default function Dashboard({
       <main className="workspace">
         <header className="topbar no-print">
           <span>
-            Meu espaço <span className="breadcrumb">/</span>{" "}
+            Olá, Flávia <span className="breadcrumb">/</span>{" "}
             <strong>{titles[tab][0]}</strong>
           </span>
           <span className="private-badge">
@@ -355,7 +294,7 @@ export default function Dashboard({
             <section className="filter-bar no-print">
               <div className="filter-caption">
                 <Icon name="list" size={18} />
-                <strong>Período e profissional</strong>
+                <strong>Mês do relatório</strong>
               </div>
               <label>
                 Competência
@@ -369,15 +308,6 @@ export default function Dashboard({
                     if (e.target.value) setMonth(e.target.value);
                   }}
                 />
-              </label>
-              <label>
-                Profissional
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                >
-                  {professionalSelect(false)}
-                </select>
               </label>
             </section>
           )}
@@ -444,7 +374,7 @@ export default function Dashboard({
                         )}
                         <button
                           className="primary"
-                          disabled={!professionals.length || busy}
+                          disabled={!professional || busy}
                         >
                           <Icon name="plus" size={17} />
                           {busy
@@ -457,14 +387,6 @@ export default function Dashboard({
                     </div>
                   </fieldset>
                 </form>
-                {!loading && !professionals.length && (
-                  <div className="notice info">
-                    Comece cadastrando um profissional.
-                    <button onClick={() => navigate("professionals")}>
-                      Cadastrar profissional →
-                    </button>
-                  </div>
-                )}
               </section>
               <section className="card no-print">
                 <div className="card-heading">
@@ -496,7 +418,6 @@ export default function Dashboard({
                                 Data {ascending ? "↑" : "↓"}
                               </button>
                             </th>
-                            <th>Profissional</th>
                             <th>Descrição</th>
                             <th className="numeric">Horas</th>
                             <th className="numeric">Ações</th>
@@ -507,11 +428,6 @@ export default function Dashboard({
                             <tr key={entry.id}>
                               <td className="nowrap">
                                 {date(entry.work_date)}
-                              </td>
-                              <td>
-                                {professionals.find(
-                                  (p) => p.id === entry.professional_id,
-                                )?.name ?? "Profissional indisponível"}
                               </td>
                               <td className="description-cell">
                                 {entry.description}
@@ -538,7 +454,7 @@ export default function Dashboard({
                                     disabled={busy}
                                     className="danger-link"
                                     onClick={() =>
-                                      void remove("entries", entry.id)
+                                      void remove(entry.id)
                                     }
                                   >
                                     Excluir
@@ -559,166 +475,6 @@ export default function Dashboard({
               </section>
             </>
           )}
-          {tab === "professionals" && (
-            <>
-              <section className="card no-print">
-                <div className="card-heading">
-                  <div>
-                    <h2>
-                      <Icon name="people" size={18} />
-                      {editingProfessional
-                        ? "Editar profissional"
-                        : "Novo profissional"}
-                    </h2>
-                    <p>Os dados serão exibidos no relatório mensal.</p>
-                  </div>
-                </div>
-                <form
-                  key={`professional-${formVersion}-${editingProfessional?.id ?? "new"}`}
-                  ref={formRef}
-                  onSubmit={saveProfessional}
-                >
-                  <fieldset disabled={busy}>
-                    <div className="form-grid">
-                      <label className="span-2">
-                        Nome *
-                        <input
-                          name="name"
-                          required
-                          maxLength={200}
-                          defaultValue={editingProfessional?.name ?? ""}
-                          placeholder="Nome completo"
-                        />
-                      </label>
-                      <label>
-                        CNPJ
-                        <input
-                          name="cnpj"
-                          maxLength={18}
-                          defaultValue={editingProfessional?.cnpj ?? ""}
-                          placeholder="00.000.000/0000-00"
-                        />
-                      </label>
-                      <label>
-                        Valor/hora (R$)
-                        <input
-                          name="hourly_rate"
-                          type="number"
-                          min="0"
-                          max="99999999.99"
-                          step="0.01"
-                          defaultValue={editingProfessional?.hourly_rate ?? ""}
-                          placeholder="Opcional"
-                        />
-                      </label>
-                      <label className="full">
-                        Atividade/Contrato
-                        <textarea
-                          name="contract"
-                          rows={2}
-                          maxLength={2000}
-                          defaultValue={editingProfessional?.contract ?? ""}
-                          placeholder="Atividade prestada ou referência do contrato"
-                        />
-                      </label>
-                    </div>
-                    <div className="form-footer">
-                      <span>* Nome obrigatório</span>
-                      <div>
-                        {editingProfessional && (
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={clearForms}
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                        <button className="primary" disabled={busy}>
-                          <Icon name="plus" size={17} />
-                          {busy ? "Salvando…" : "Salvar profissional"}
-                        </button>
-                      </div>
-                    </div>
-                  </fieldset>
-                </form>
-              </section>
-              <section className="card no-print">
-                <div className="card-heading">
-                  <h2>
-                    Profissionais cadastrados{" "}
-                    <span className="count-badge">{professionals.length}</span>
-                  </h2>
-                </div>
-                {loading ? (
-                  <Loading />
-                ) : !professionals.length ? (
-                  <Empty
-                    title="Quem faz parte do seu trabalho?"
-                    text="Cadastre o primeiro profissional no formulário acima."
-                  />
-                ) : (
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Nome</th>
-                          <th>CNPJ</th>
-                          <th>Atividade/Contrato</th>
-                          <th className="numeric">Valor/hora</th>
-                          <th className="numeric">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {professionals.map((p) => (
-                          <tr key={p.id}>
-                            <td>
-                              <strong>{p.name}</strong>
-                            </td>
-                            <td className="nowrap">{p.cnpj || "—"}</td>
-                            <td className="description-cell">
-                              {p.contract || "—"}
-                            </td>
-                            <td className="numeric">
-                              {p.hourly_rate === null
-                                ? "—"
-                                : money(Number(p.hourly_rate))}
-                            </td>
-                            <td>
-                              <div className="row-actions">
-                                <button
-                                  disabled={busy}
-                                  onClick={() => {
-                                    setEditingProfessional(p);
-                                    setFormVersion((v) => v + 1);
-                                    formRef.current?.scrollIntoView({
-                                      behavior: "smooth",
-                                      block: "center",
-                                    });
-                                  }}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="danger-link"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void remove("professionals", p.id)
-                                  }
-                                >
-                                  Excluir
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </section>
-            </>
-          )}
           {tab === "report" && (
             <>
               {loading ? (
@@ -728,11 +484,11 @@ export default function Dashboard({
                   title="Relatório indisponível"
                   text="Corrija o erro de carregamento para gerar um relatório completo."
                 />
-              ) : !reportProfessional ? (
+              ) : !professional ? (
                 <div className="card">
                   <Empty
                     title="Tudo pronto para fechar o mês"
-                    text="Selecione um profissional e a competência para visualizar seu relatório."
+                    text="Selecione o mês para visualizar seu relatório."
                   />
                 </div>
               ) : (
@@ -748,7 +504,7 @@ export default function Dashboard({
                     </button>
                   </div>
                   <Report
-                    professional={reportProfessional}
+                    professional={professional}
                     entries={entries}
                     month={month}
                   />

@@ -1393,3 +1393,12 @@ tbody tr:hover {
   .page-heading { flex-wrap: wrap; }
   .activity-dialog { padding: 18px; }
 }
+@media screen {
+  .activity-field > .activity-button {
+    width: 100%; white-space: normal; font-size: 20px;
+    min-height: 58px; margin-top: 8px; border-radius: 12px;
+    background: #6635a3; border-color: #6635a3; color: white;
+  }
+  .activity-field > .activity-button:hover { background: #512781; }
+  .activity-field .activity-saved { color: #167044; margin-top: 8px; }
+}

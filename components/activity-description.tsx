@@ -7,7 +7,8 @@ export default function ActivityDescription({ initialValue }: { initialValue: st
   return <div className="full activity-field">
     <input type="hidden" name="description" value={value} />
     <p>Descrição das atividades *</p>
-    <button type="button" className="secondary" onClick={() => { setDraft(value); dialog.current?.showModal(); }}>✎ Escrever em janela maior</button>
+    <button type="button" className="secondary activity-button" onClick={() => { setDraft(value); dialog.current?.showModal(); }}>{value.trim() ? "Editar descrição" : "Descrever atividade"}</button>
+    {value.trim() && <p className="activity-saved" role="status">✓ Descrição preenchida</p>}
     <dialog ref={dialog} className="activity-dialog" aria-labelledby="activity-title">
       <h2 id="activity-title">Descreva suas atividades</h2>
       <label htmlFor="activity-draft">O que você fez neste dia?</label>
