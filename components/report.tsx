@@ -108,7 +108,7 @@ export default function Report({
         </div>
         <div>
           <span aria-label="Espaço reservado para assinatura pelo Gov.br" />
-          <strong>Eva Rose Bueno Nunes</strong>
+          <strong>Eva Rosi Bueno Nunes</strong>
           <p>Secretária Municipal da Cultura, Turismo e Eventos</p>
           <p>Assinatura digital pelo Gov.br</p>
         </div>
