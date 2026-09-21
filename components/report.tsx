@@ -19,7 +19,6 @@ export default function Report({
   const sorted = [...entries].sort((a, b) =>
     a.work_date.localeCompare(b.work_date),
   );
-  const notes = sorted.filter((e) => e.notes?.trim());
   return (
     <article className="report-sheet" aria-label="Relatório mensal de horas">
       <header className="report-header">
@@ -85,19 +84,6 @@ export default function Report({
           <div><span>Valor/hora</span><strong>{money(Number(professional.hourly_rate))}</strong></div>
           <div className="grand-total"><span>Valor total</span><strong>{money(total * Number(professional.hourly_rate))}</strong></div>
         </>}
-      </section>
-      <section className="report-notes">
-        <h2>Observações</h2>
-        {notes.length ? (
-          notes.map((e) => (
-            <p key={e.id} className="preserve-text">
-              <strong>{date(e.work_date)} — </strong>
-              {e.notes}
-            </p>
-          ))
-        ) : (
-          <p>Sem observações.</p>
-        )}
       </section>
       <footer className="signatures">
         <div>

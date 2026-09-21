@@ -12,6 +12,7 @@ import {
   date,
   errorMessage,
   monthRange,
+  monthLabel,
   number,
   today,
   type Entry,
@@ -225,6 +226,7 @@ export default function Dashboard({
       setProfessional(updated as Professional);
     }, "Dados atualizados. Eles aparecerão no relatório.");
   }
+  const days = new Set(entries.map((entry) => entry.work_date)).size;
   const total = entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
   const sorted = [...entries].sort((a, b) =>
     ascending
@@ -422,6 +424,48 @@ export default function Dashboard({
                     </div>
                   </fieldset>
                 </form>
+              </section>
+              <section className="stats no-print">
+                <div className="stat">
+                  <span className="stat-icon">
+                    <Icon name="clock" />
+                  </span>
+                  <span>
+                    Horas no período
+                    <strong>
+                      {loading || loadError ? "—" : number(total)} <small>h</small>
+                    </strong>
+                    <small className="stat-detail">{monthLabel(month)}</small>
+                  </span>
+                </div>
+                <div className="stat">
+                  <span className="stat-icon">
+                    <Icon name="list" />
+                  </span>
+                  <span>
+                    Lançamentos
+                    <strong>
+                      {loading || loadError
+                        ? "—"
+                        : entries.length.toString().padStart(2, "0")}
+                    </strong>
+                    <small className="stat-detail">
+                      atividades registradas
+                    </small>
+                  </span>
+                </div>
+                <div className="stat">
+                  <span className="stat-icon">
+                    <Icon name="people" />
+                  </span>
+                  <span>
+                    Dias trabalhados
+                    <strong>
+                      {loading || loadError ? "—" : days.toString().padStart(2, "0")}
+                    </strong>
+                    <small className="stat-detail">com horas registradas</small>
+                  </span>
+                </div>
               </section>
               <section className="card no-print">
                 <div className="card-heading">
