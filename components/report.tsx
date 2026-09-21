@@ -35,7 +35,7 @@ export default function Report({
           <dt>CNPJ</dt>
           <dd>{professional.cnpj || "Não informado"}</dd>
         </div>
-        <div className="full">
+        <div>
           <dt>Atividade/Contrato</dt>
           <dd>{professional.contract || "Não informado"}</dd>
         </div>
