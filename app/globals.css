@@ -821,10 +821,12 @@ tbody tr:hover {
   line-height: 1.7;
 }
 .signatures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8mm;
   width: 100%;
-  max-width: 90mm;
   margin: 0 auto;
-  padding-top: 25mm;
+  padding-top: 8mm;
   break-inside: avoid;
   text-align: center;
   font-size: 9px;
@@ -833,7 +835,8 @@ tbody tr:hover {
 }
 .signatures span {
   display: block;
-  border-top: 1px solid #333;
+  height: 25mm;
+  border-bottom: 1px solid #333;
   margin-bottom: 4mm;
 }
 .capitalize {
@@ -1201,7 +1204,7 @@ tbody tr:hover {
   }
   .signatures {
     font-size: 9px;
-    padding-top: 20mm;
+    padding-top: 8mm;
   }
   .app-footer {
     font-size: 8px;
@@ -1310,7 +1313,7 @@ tbody tr:hover {
     widows: 3;
   }
   .signatures {
-    padding-top: 22mm;
+    padding-top: 8mm;
   }
   .report-header h1 {
     font-size: 17pt;

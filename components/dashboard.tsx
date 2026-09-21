@@ -209,7 +209,12 @@ export default function Dashboard({
       name: String(data.get("name") ?? "").trim(),
       cnpj: String(data.get("cnpj") ?? "").trim() || null,
       contract: String(data.get("contract") ?? "").trim() || null,
+      hourly_rate: String(data.get("hourly_rate") ?? "").trim() === "" ? null : Number(String(data.get("hourly_rate")).replace(",", ".")),
     };
+    if (payload.hourly_rate !== null && (!Number.isFinite(payload.hourly_rate) || payload.hourly_rate < 0 || payload.hourly_rate > 9999999999.99)) {
+      setNotice({ text: "Informe um valor/hora válido, maior ou igual a zero.", error: true });
+      return;
+    }
     if (!payload.name) {
       setNotice({ text: "Informe seu nome.", error: true });
       return;
@@ -338,6 +343,7 @@ export default function Dashboard({
                   <label>Nome *<input name="name" required defaultValue={professional.name} /></label>
                   <label>CNPJ<input name="cnpj" defaultValue={professional.cnpj ?? ""} placeholder="Opcional" /></label>
                   <label>Atividade/Contrato<input name="contract" defaultValue={professional.contract ?? ""} placeholder="Opcional" /></label>
+                  <label>Valor/hora (R$)<input name="hourly_rate" type="number" min="0" max="9999999999.99" step="0.01" defaultValue={professional.hourly_rate ?? ""} placeholder="Opcional" /></label>
                 </div><div className="form-footer"><span>Esses dados aparecem no relatório.</span><button className="primary" disabled={busy}>Salvar meus dados</button></div></fieldset></form>
               </section>}
           {tab === "entries" && professional && (
@@ -525,7 +531,7 @@ export default function Dashboard({
                   <div className="report-toolbar no-print">
                     <span>
                       <span className="status-dot" />
-                      Prévia do relatório · A4
+                      Salve o PDF e assine pelo Gov.br · Flávia e Eva
                     </span>
                     <button className="primary" onClick={() => window.print()}>
                       <Icon name="print" size={18} />

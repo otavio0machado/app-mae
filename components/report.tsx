@@ -1,6 +1,7 @@
 import {
   date,
   monthLabel,
+  money,
   number,
   type Entry,
   type Professional,
@@ -54,7 +55,7 @@ export default function Report({
           <tr>
             <th>Data</th>
             <th>Descrição das atividades</th>
-            <th className="numeric">Horas</th>
+            <th className="numeric">Horas diárias</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +64,7 @@ export default function Report({
               <tr key={e.id}>
                 <td className="nowrap">{date(e.work_date)}</td>
                 <td className="preserve-text">{e.description}</td>
-                <td className="numeric">{number(Number(e.hours))}</td>
+                <td className="numeric">{number(Number(e.hours))} h</td>
               </tr>
             ))
           ) : (
@@ -80,6 +81,10 @@ export default function Report({
           <span>Total de horas</span>
           <strong>{number(total)} h</strong>
         </div>
+        {professional.hourly_rate != null && <>
+          <div><span>Valor/hora</span><strong>{money(Number(professional.hourly_rate))}</strong></div>
+          <div className="grand-total"><span>Valor total</span><strong>{money(total * Number(professional.hourly_rate))}</strong></div>
+        </>}
       </section>
       <section className="report-notes">
         <h2>Observações</h2>
@@ -96,9 +101,16 @@ export default function Report({
       </section>
       <footer className="signatures">
         <div>
-          <span />
+          <span aria-label="Espaço reservado para assinatura pelo Gov.br" />
           <strong>{professional.name}</strong>
-          <p>Assinatura e carimbo do profissional</p>
+          <p>Profissional</p>
+          <p>Assinatura digital pelo Gov.br</p>
+        </div>
+        <div>
+          <span aria-label="Espaço reservado para assinatura pelo Gov.br" />
+          <strong>Eva Rose Bueno Nunes</strong>
+          <p>Secretária Municipal da Cultura, Turismo e Eventos</p>
+          <p>Assinatura digital pelo Gov.br</p>
         </div>
       </footer>
     </article>
